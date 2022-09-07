@@ -202,11 +202,13 @@ func createDriveDirectory(svc *drive.Service, folderId string, name string) (str
 	foundFolders := 0
 	var nextFolderId string
 	for _, i := range r.Files {
-		for _, p := range i.Parents {
-			if p == folderId {
-				foundFolders++
-				fmt.Printf("Found existing folder %s.\n", name)
-				nextFolderId = i.Id
+		if len(i.Parents) <= 1 {
+			for _, p := range i.Parents {
+				if p == folderId {
+					foundFolders++
+					fmt.Printf("Found existing folder %s.\n", name)
+					nextFolderId = i.Id
+				}
 			}
 		}
 	}
