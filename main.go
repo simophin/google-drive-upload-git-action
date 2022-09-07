@@ -234,26 +234,17 @@ func uploadFile(svc *drive.Service, filename string, folderId string, name strin
 	fmt.Printf("target file name: %s\n", name)
 
 	if overwriteFlag {
-		r, err := svc.Files.List().Fields("files(name,id,mimeType,parents)").Q("name='" + name + "'").IncludeItemsFromAllDrives(true).Corpora("allDrives").SupportsAllDrives(true).Do()
+		r, err := svc.Files.List().Fields("files(name,id,mimeType,parents)").Q(fmt.Sprintf("name = '%s' and '%s' in parents", name, folderId)).IncludeItemsFromAllDrives(true).Corpora("allDrives").SupportsAllDrives(true).Do()
 		if err != nil {
 			log.Fatalf("Unable to retrieve files: %v", err)
 			fmt.Println("Unable to retrieve files")
 		}
 		fmt.Printf("Files: %d\n", len(r.Files))
 		var currentFile *drive.File = nil
-		for _, i := range r.Files {
-			found := false
-			if name == i.Name {
-				currentFile = i
-				for _, p := range i.Parents {
-					if p == folderId {
-						fmt.Println("file found in expected folder")
-						found = true
-						break
-					}
-				}
-			}
-			if found {
+		for _, f := range r.Files {
+			// Only allow the immediate file to be found
+			if len(f.Parents) > 0 && f.Parents[0] == folderId {
+				currentFile = f
 				break
 			}
 		}
@@ -263,7 +254,7 @@ func uploadFile(svc *drive.Service, filename string, folderId string, name strin
 			uploadToDrive(svc, filename, folderId, nil, name, mimeType)
 		} else {
 			fmt.Printf("Overwriting file: %s (%s)\n", currentFile.Name, currentFile.Id)
-			uploadToDrive(svc, filename, folderId, currentFile, name, mimeType)
+			uploadToDrive(svc, filename, folderId, r.Files[0], name, mimeType)
 		}
 	} else {
 		uploadToDrive(svc, filename, folderId, nil, name, mimeType)
